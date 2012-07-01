@@ -7,6 +7,7 @@
 /* Variables that get filled in by configuration file */
 extern Source_t root;
 extern hash_t *sources;
+extern hash_t *ip_host_hash;
 
 gmetad_config_t gmetad_config;
 
@@ -254,6 +255,23 @@ static DOTCONF_CB(cb_case_sensitive_hostnames)
    return NULL;
 }
 
+static DOTCONF_CB(cb_ip_host_hash)
+{
+   datum_t key, val, *find;
+
+   key.data = cmd->data.list[0];
+   key.size = strlen(key.data) + 1;
+
+   val.data = cmd->data.list[1];
+   val.size = strlen(val.data) + 1;
+
+   find = hash_insert( &key, &val, ip_host_hash );
+   if(!find)
+      err_quit("Unable to insert list pointer into source hash\n");
+   debug_msg("Data inserted for [%s] into ip_host hash", key.data);
+   return NULL;
+}
+
 static DOTCONF_CB(cb_carbon_server)
 {
    gmetad_config_t *c = (gmetad_config_t*) cmd->option->info;
@@ -327,6 +345,7 @@ static configoption_t gmetad_options[] =
       {"write_rrds", ARG_STR, cb_write_rrds, &gmetad_config, 0},
       {"RRAs", ARG_LIST, cb_RRAs, &gmetad_config, 0},
       {"case_sensitive_hostnames", ARG_INT, cb_case_sensitive_hostnames, &gmetad_config, 0},
+      {"ip_host_hash", ARG_LIST, cb_ip_host_hash, &gmetad_config, 0},
       {"carbon_server", ARG_STR, cb_carbon_server, &gmetad_config, 0},
       {"carbon_port", ARG_INT, cb_carbon_port, &gmetad_config, 0},
       {"carbon_timeout", ARG_INT, cb_carbon_timeout, &gmetad_config, 0},
@@ -404,5 +423,28 @@ number_of_datasources ( char *config_file )
       }
    dotconf_cleanup(configfile);
    return number_of_sources;
+}
+
+int
+number_of_ip_host_hash ( char *config_file )
+{
+   int number_of_ip_host_hash = 0;
+   char buf[1024];
+   configfile_t *configfile;
+
+   configfile = dotconf_create( config_file, gmetad_options, 0, CASE_INSENSITIVE );
+   if (!configfile) {
+      err_quit("Unable to open config file: %s\n", config_file);
+   }
+
+   while (! dotconf_get_next_line( buf, 1024, configfile ))
+      {
+         if( strstr( buf, "ip_host_hash" ) && (buf[0] != '#') )
+            {
+               number_of_ip_host_hash++;
+            }
+      }
+   dotconf_cleanup(configfile);
+   return number_of_ip_host_hash;
 }
 

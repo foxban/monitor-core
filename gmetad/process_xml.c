@@ -16,6 +16,7 @@ extern struct type_tag* in_type_list (const char *, unsigned int);
 /* Our root host. */
 extern Source_t root;
 extern gmetad_config_t gmetad_config;
+extern hash_t *ip_host_hash;
 
 /* The report method functions (in server.c). */
 extern int metric_report_start(Generic_t *self, datum_t *key, 
@@ -440,6 +441,18 @@ startElement_HOST(void *data, const char *el, const char **attr)
     */
    xmldata->hostname = realloc(xmldata->hostname, strlen(name)+1);
    strcpy(xmldata->hostname, name);
+
+   /* get host name from ip host hash map, if it's present. wangli@360.cn */
+   hashkey.data = xmldata->hostname;
+   hashkey.size = strlen(xmldata->hostname) + 1;
+   
+   hash_datum = hash_lookup(&hashkey, ip_host_hash);
+   if( hash_datum )
+   {
+      strcpy(xmldata->hostname, hash_datum->data );
+      strcpy((char *)name, hash_datum->data );
+   }
+   hash_datum = NULL;
 
    /* Convert name to lower case - host names can't be
     * case sensitive

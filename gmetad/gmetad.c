@@ -22,6 +22,8 @@
 
 /* Holds our data sources. */
 hash_t *sources;
+/* Holds ip host hash map. wangli@360.cn */
+hash_t *ip_host_hash;
 
 /* The root of our local grid. Replaces the old "xml" hash table. */
 Source_t root;
@@ -36,6 +38,7 @@ extern void *data_thread ( void *arg );
 extern void* server_thread(void *);
 extern int parse_config_file ( char *config_file );
 extern int number_of_datasources ( char *config_file );
+extern int number_of_ip_host_hash ( char *config_file );
 extern struct type_tag* in_type_list (char *, unsigned int);
 
 struct gengetopt_args_info args_info;
@@ -270,7 +273,7 @@ main ( int argc, char *argv[] )
    struct stat struct_stat;
    pthread_t pid;
    pthread_attr_t attr;
-   int i, num_sources;
+   int i, num_sources, num_ip_host_hash;
    uid_t gmetad_uid;
    mode_t rrd_umask;
    char * gmetad_username;
@@ -287,6 +290,10 @@ main ( int argc, char *argv[] )
 
    if (cmdline_parser(argc, argv, &args_info) != 0)
       err_quit("command-line parser error");
+
+   num_ip_host_hash = number_of_ip_host_hash( args_info.conf_arg );
+   ip_host_hash = hash_create( num_ip_host_hash ? num_ip_host_hash : 0 );
+   debug_msg("ip_host_hash created, hash size %d.", num_ip_host_hash );
 
    num_sources = number_of_datasources( args_info.conf_arg );
    if(!num_sources)
